@@ -41,7 +41,5 @@ for line in input1:
     columns2[source] = columns2[source][quantity:]
     columns2[destination] = movedBoxes2 + columns2[destination]
 
-
 print("A CrateMover9000 would result in the following box configuration:", ''.join([columns[id][0] for id in sorted(columns.keys())]))
 print("A CrateMover9001 would result in the following box configuration:", ''.join([columns2[id][0] for id in sorted(columns2.keys())]))
-    
