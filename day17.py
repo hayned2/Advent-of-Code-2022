@@ -2,9 +2,10 @@ import os
 
 input1 = open(os.path.dirname(os.path.realpath(__file__)) + '/day17_input2.txt')
 jetStreams = next(input1).strip()
-jetStreamIndex = 0
 input1.close()
 
+# Constants and tracking variables
+jetStreamIndex = 0
 towerWidth = 7
 towerHeight = 0
 tower = [['.'] * towerWidth]
@@ -17,23 +18,29 @@ rockHeights = {
 }
 rowsChopped = 0
 
+# Given a tower, count the number of non-blank rows
 def getHeight(tower):
     blankRows = 0
     while blankRows < len(tower) and ''.join(tower[blankRows]) == '.' * towerWidth:
         blankRows += 1
     return len(tower) - blankRows + rowsChopped
 
+# Drop the next rock onto the tower
 def addRock(tower, rockNum):
 
+    # Count how many blank rows are over the tower
     blankRows = 0
     while blankRows < len(tower) and ''.join(tower[blankRows]) == '.' * towerWidth:
         blankRows += 1
+    # Add more blank rows if we need them to fit the current rock
     if blankRows < 3 + rockHeights[rockNum]:
         for _ in range(3 - blankRows + rockHeights[rockNum]):
             tower = [['.'] * towerWidth] + tower
+    # Remove blank rows if there are too many for the current rock
     else:
         tower = tower[blankRows - (3 + rockHeights[rockNum]):]
 
+    # Add the newly falling rock. Track its position.
     bottomRow = None
     topRow = 0
     if rockNum == 1:
@@ -62,9 +69,12 @@ def addRock(tower, rockNum):
     
     global jetStreamIndex, towerHeight, rowsChopped
 
+    # Keep going until the rock comes to a halt.
     while True:
         movementDirection = jetStreams[jetStreamIndex]
         jetStreamIndex = (jetStreamIndex + 1) % len(jetStreams)
+
+        # Determine if the jet streams can push the rock
         canMoveSide = True
         for row in range(topRow, bottomRow + 1):
             if movementDirection == '>':
@@ -75,6 +85,8 @@ def addRock(tower, rockNum):
                 leftEdge = tower[row].index('@') - 1
                 if leftEdge < 0 or tower[row][leftEdge] != '.':
                     canMoveSide = False
+
+        # Push the rock if it can be pushed
         if canMoveSide:
             for row in range(topRow, bottomRow + 1):
                 if movementDirection == '>':
@@ -83,8 +95,11 @@ def addRock(tower, rockNum):
                 else:
                     tower[row][tower[row].index('@') - 1] = '@'
                     tower[row][towerWidth - tower[row][::-1].index('@') - 1] = '.'
+
+        # See if the rock can fall down
         canMoveDown = True
         for row in range(topRow, bottomRow + 1):
+            # True if the rock has hit the floor
             if row + 1 == len(tower):
                 canMoveDown = False
                 break
@@ -97,6 +112,7 @@ def addRock(tower, rockNum):
                 if not canMoveDown:
                     break
 
+        # Drop the rock one row if it can fall
         if canMoveDown:
             for row in range(bottomRow, topRow - 1, -1):
                 indices = [i for i, x in enumerate(tower[row]) if x == '@']
@@ -105,36 +121,24 @@ def addRock(tower, rockNum):
                     tower[row][index] = '.'
             bottomRow += 1
             topRow += 1
+        
+        # Rock can't fall, time to come to a halt
         else:
             choppingValue = None
+            # Change the rock from '@' symbols to '#' symbols
             for row in range(topRow, bottomRow + 1):
                 for column in range(towerWidth):
                     if tower[row][column] == '@':
                         tower[row][column] = '#'
+                # If we have a fully filled row, call a Tetris and chop off the tower from there, everything below that doesn't matter anymore
+                # (except the number of rows chopped, for height-tracking purposes)
                 if not choppingValue and ''.join(tower[row]) == '#' * towerWidth:
                     choppingValue = row
             if choppingValue:
                 rowsChopped += len(tower[choppingValue:])
-                tower = tower[0:choppingValue]
+                tower = tower[0:choppingValue]            
 
-            # columnHeights = {}
-            # unfoundHeights = set(range(towerWidth))
-            # currentRow = 0
-            # while len(unfoundHeights) > 0 and currentRow < len(tower):
-            #     for column in unfoundHeights:
-            #         if tower[currentRow][column] == '#':
-            #             columnHeights[column] = currentRow
-            #     unfoundHeights -= set(columnHeights.keys())
-            #     currentRow += 1
-            # if len(unfoundHeights) == 0:
-            #     choppingValue = max(columnHeights.values())
-            #     rowsChopped += len(tower[choppingValue:])
-            #     #print("Chopping off", len(tower[choppingValue:]), "rows", rowsChopped)
-            #     #print('BEFORE\n' + '\n'.join(''.join(row) for row in tower))
-            #     tower = tower[0:choppingValue]
-            #     #print('AFTER\n' + '\n'.join(''.join(row) for row in tower))
-            
-                    
+            # Update the tower's height   
             blankRows = 0
             while blankRows < len(tower) and ''.join(tower[blankRows]) == '.' * towerWidth:
                 blankRows += 1
@@ -149,26 +153,28 @@ targetState = None
 targetStateHeight = None
 targetStateRowsChopped = None
 while x < trillion:
+    # Next rock
     tower = addRock(tower, (x % 5) + 1)
-    #print('\n' + '\n'.join(''.join(row) for row in tower))
+    # Part 1
     if x == 2021:
-        print("After 2022 rocks, the tower is", towerHeight, "tall")
+        print("After 2022 rocks, the tower is", towerHeight, "rows tall")
+    # Part 2 - pick an arbitrary state of rockNumber and jetStreamIndex. See how long it takes to see this state again.
+    # The theory is to find a cycle and use that to skip ahead to the end. 1 trillion would take forever manually.
     elif x == targetStateRock:
         targetState = ((x % 5) + 1, jetStreamIndex)
         targetStateHeight = getHeight(tower)
         targetStateRowsChopped = rowsChopped
     elif x > targetStateRock:
         currentState = ((x % 5) + 1, jetStreamIndex)
+        # Bingo, we've found a cycle. Track how many rocks are between cycles, along with how many rows get chopped.
+        # Use these values to skip ahead to the final cycle and run manually to the finish line
         if currentState == targetState:
-            print("CYCLE FOUND AT", x)
             rocksInCycle = x - targetStateRock
             cycleRowsChopped = rowsChopped - targetStateRowsChopped
-            print("Cycle is", rocksInCycle, "rocks long, with rows chopped", cycleRowsChopped)
             cyclesToAdd = (trillion - x) // rocksInCycle
             x += (rocksInCycle * cyclesToAdd)
             rowsChopped += (cycleRowsChopped * cyclesToAdd)
-            print("Skipping", cyclesToAdd, "cycles to rock", x, "chopped", rowsChopped)
-
     x += 1
 
-print("After 1 trillion rocks, the tower is", towerHeight, "tall")
+print("After 1 trillion rocks, the tower is", towerHeight, "rows tall")
+exit()
