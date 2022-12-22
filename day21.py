@@ -53,9 +53,10 @@ while len(unknownMonkeysPt2) > 0:
     if len(foundMonkeys) == 0:
         break
 
-# Expand a monkey's unknown values. So if monkey = m2 + m3, m2 = m4 + m5, and m3 = 10 we will get monkey = '(m4 + m5) + 10' (with more parentheses)
+# Expand a monkey's unknown values. So if monkey = m2 + m3, m2 = humn * 3, and m3 = 10 we will get monkey = '(humn * 3) + 10' (with more parentheses)
+# This assumes no cycles and that 'humn' is the only unknown variable
 def expandValue(monkey, knownMonkeys, unknownMonkeys):
-    if monkey in knownMonkeys or monkey.isdigit():
+    if monkey in knownMonkeys:
         return str(knownMonkeys[monkey])
     elif monkey != 'humn':
         [monkey1, monkey2, operation] = unknownMonkeys[monkey]
@@ -64,7 +65,7 @@ def expandValue(monkey, knownMonkeys, unknownMonkeys):
         return monkey
 
 # Turn the problem into a solveable algebraic expression with a single variable 'humn'
-# Use sympify to solve the expression for the single variable
+# Use sympy to solve the expression for the single variable
 equation = sympify("Eq(" + expandValue(unknownMonkeysPt2['root'][0], knownMonkeysPt2, unknownMonkeysPt2) + '-' + expandValue(unknownMonkeysPt2['root'][1], knownMonkeysPt2, unknownMonkeysPt2) + ",0)")
 humn = Symbol('humn')
 print("The human should yell the number", solve(equation)[0])
