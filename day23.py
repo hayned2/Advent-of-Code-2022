@@ -91,12 +91,7 @@ def countOpenSpaces(elves):
         maxx = max(elf[1], maxx)
         miny = min(elf[0], miny)
         maxy = max(elf[0], maxy)
-    openSpaces = 0
-    for y in range(miny, maxy + 1):
-        for x in range(minx, maxx + 1):
-            if (y, x) not in elves:
-                openSpaces += 1
-    return openSpaces
+    return ((maxx - minx + 1) * (maxy - miny + 1)) - len(elves)
 
 # Function for printing out the grid (debug only)
 def printGrid(elves):
